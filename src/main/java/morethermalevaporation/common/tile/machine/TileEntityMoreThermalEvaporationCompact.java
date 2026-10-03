@@ -235,8 +235,13 @@ public class TileEntityMoreThermalEvaporationCompact extends TileEntityRecipeMac
     }
 
     public int getMaxFluid() {
-        inputTankCapacity = (288 / 4) * this.tier.getInputTankCapacity();
-        return inputTankCapacity;
+    if (this.tier == MoreThermalEvaporationTier.CREATIVE) {
+        inputTankCapacity = Integer.MAX_VALUE;
+    } else {
+        long capacity = (long) (288 / 4) * this.tier.getInputTankCapacity();
+        inputTankCapacity = (int) Math.min(Integer.MAX_VALUE, capacity);
+    }
+    return inputTankCapacity;
     }
 
 
