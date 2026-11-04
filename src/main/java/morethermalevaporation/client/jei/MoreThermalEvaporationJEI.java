@@ -6,7 +6,6 @@ import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
-import mezz.jei.api.registration.IRecipeRegistration;
 import morethermalevaporation.MoreThermalEvaporation;
 import morethermalevaporation.common.registries.MoreThermalEvaporationBlocks;
 import morethermalevaporation.common.tier.MoreThermalEvaporationTier;
@@ -30,10 +29,6 @@ public class MoreThermalEvaporationJEI implements IModPlugin {
                     MoreThermalEvaporationBlocks.VALVES.get(tier), MoreThermalEvaporationBlocks.BLOCKS.get(tier));
         }
 
-        // ↓↓↓ Just Enough Mekanism Multiblocks連携
-        if (MoreThermalEvaporation.JustEnoughMekanismMultiblocksLoaded) {
-            MoreThermalEvaporationJEIHelper.registerRecipeCatalysts(registry);
-        }
     }
 
     // ↓↓↓ Just Enough Mekanism Multiblocks連携 ↓↓↓
@@ -44,11 +39,5 @@ public class MoreThermalEvaporationJEI implements IModPlugin {
         }
     }
 
-    @Override
-    public void registerRecipes(IRecipeRegistration registry) {
-        if (MoreThermalEvaporation.JustEnoughMekanismMultiblocksLoaded) {
-            MoreThermalEvaporationJEIHelper.registerRecipes(registry);
-        }
-    }
 
 }

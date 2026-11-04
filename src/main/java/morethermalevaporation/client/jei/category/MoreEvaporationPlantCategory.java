@@ -36,6 +36,17 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 
+import giselle.jei_mekanism_multiblocks.client.preview.IPreviewBuilder;
+import giselle.jei_mekanism_multiblocks.client.preview.PreviewBuilder;
+import giselle.jei_mekanism_multiblocks.client.preview.PreviewLevel;
+import giselle.jei_mekanism_multiblocks.client.preview.PreviewSelectors;
+import mekanism.common.block.attribute.Attribute;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+
 import java.util.function.Consumer;
 
 public class MoreEvaporationPlantCategory extends MultiblockCategory<MoreEvaporationPlantCategory.MoreEvaporationPlantWidget> {
@@ -43,7 +54,7 @@ public class MoreEvaporationPlantCategory extends MultiblockCategory<MoreEvapora
 
     public MoreEvaporationPlantCategory(IGuiHelper helper, MoreThermalEvaporationTier tier, Class<? extends MoreEvaporationPlantWidget> widgetClass) {
         // NOTE JEI表示順の為にティア順をパスに追加
-        super(helper, MoreThermalEvaporation.rl(tier.ordinal() + "_" + tier.getBaseTier().getLowerName() + "_evaporation_plant"), widgetClass, MoreThermalEvaporationLang.getLangPlant(tier).translate(), MoreThermalEvaporationBlocks.CONTROLLERS.get(tier).getItemStack());
+        super(helper, createRecipeType(MoreThermalEvaporation.rl(tier.ordinal() + "_" + tier.getBaseTier().getLowerName() + "_evaporation_plant"), widgetClass), MoreThermalEvaporationLang.getLangPlant(tier).translate(), MoreThermalEvaporationBlocks.CONTROLLERS.get(tier).getItemStack());
         this.tier = tier;
     }
 
@@ -72,6 +83,137 @@ public class MoreEvaporationPlantCategory extends MultiblockCategory<MoreEvapora
         }
 
         protected abstract MoreThermalEvaporationTier getTier();
+    private static final byte[][] BOTTOM_ALLOWED_GRID = {
+            {0, 0, 0, 0, 1, 0, 0, 0, 0},
+            {0, 0, 1, 1, 1, 1, 1, 0, 0},
+            {0, 1, 1, 1, 1, 1, 1, 1, 0},
+            {0, 1, 1, 1, 1, 1, 1, 1, 0},
+            {1, 1, 1, 1, 1, 1, 1, 1, 1},
+            {0, 1, 1, 1, 1, 1, 1, 1, 0},
+            {0, 1, 1, 1, 1, 1, 1, 1, 0},
+            {0, 0, 1, 1, 1, 1, 1, 0, 0},
+            {0, 0, 0, 0, 1, 0, 0, 0, 0}
+    };
+    private static final byte[][] CENTER_FRAME_ALLOWED_GRID = {
+            {0, 0, 1, 1, 1, 1, 1, 0, 0},
+            {0, 1, 1, 3, 3, 3, 1, 1, 0},
+            {1, 1, 3, 3, 3, 3, 3, 1, 1},
+            {1, 3, 3, 3, 3, 3, 3, 3, 1},
+            {1, 3, 3, 3, 3, 3, 3, 3, 1},
+            {1, 3, 3, 3, 3, 3, 3, 3, 1},
+            {1, 1, 3, 3, 3, 3, 3, 1, 1},
+            {0, 1, 1, 3, 3, 3, 1, 1, 0},
+            {0, 0, 1, 1, 1, 1, 1, 0, 0}
+    };
+    private static final byte[][] CENTER_ALLOWED_GRID = {
+            {0, 0, 1, 2, 2, 2, 1, 0, 0},
+            {0, 1, 1, 3, 3, 3, 1, 1, 0},
+            {1, 1, 3, 3, 3, 3, 3, 1, 1},
+            {2, 3, 3, 3, 3, 3, 3, 3, 2},
+            {2, 3, 3, 3, 3, 3, 3, 3, 2},
+            {2, 3, 3, 3, 3, 3, 3, 3, 2},
+            {1, 1, 3, 3, 3, 3, 3, 1, 1},
+            {0, 1, 1, 3, 3, 3, 1, 1, 0},
+            {0, 0, 1, 2, 2, 2, 1, 0, 0}
+    };
+    private static final byte[][] TOP_ALLOWED_GRID = {
+            {0, 0, 0, 0, 1, 0, 0, 0, 0},
+            {0, 0, 1, 1, 1, 1, 1, 0, 0},
+            {0, 1, 3, 3, 3, 3, 3, 1, 0},
+            {0, 1, 3, 3, 3, 3, 3, 1, 0},
+            {1, 1, 3, 3, 3, 3, 3, 1, 1},
+            {0, 1, 3, 3, 3, 3, 3, 1, 0},
+            {0, 1, 3, 3, 3, 3, 3, 1, 0},
+            {0, 0, 1, 1, 1, 1, 1, 0, 0},
+            {0, 0, 0, 0, 1, 0, 0, 0, 0}
+    };
+		@Override
+		public boolean canCreatePreview()
+		{
+			return true;
+		}
+
+		@Override
+		protected void fillPreview(IPreviewBuilder builder)
+		{
+			super.fillPreview(builder);
+
+			Vec3i dimension = this.getDimension();
+			BlockPos controllerPos = new BlockPos(dimension.getX() - 2, 1, dimension.getZ() - 1);
+
+			boolean useGlass = this.isUseGlass();
+			boolean useAdvancedSolarGenerator = this.isUseAdvancedSolarGenerator();
+			BlockState edgeState = MoreThermalEvaporationBlocks.BLOCKS.get(getTier()).getBlock().defaultBlockState();
+			BlockState valveState = MoreThermalEvaporationBlocks.VALVES.get(getTier()).getBlock().defaultBlockState();
+			BlockState sideState = useGlass ? this.getGlassBlock().defaultBlockState() : edgeState;
+
+			builder.setBlockShell(edgeState, sideState);
+			builder.setBlock(PreviewSelectors.top(), Blocks.AIR.defaultBlockState());
+			builder.setBlock(controllerPos, Attribute.setFacing(Attribute.setActive(MoreThermalEvaporationBlocks.CONTROLLERS.get(getTier()).getBlock().defaultBlockState(), true), Direction.SOUTH));
+			builder.replaceBlock(PreviewSelectors.shellSidesCCW(), sideState, valveState, this.getValveCount());
+
+			if (useGlass && !useAdvancedSolarGenerator)
+			{
+				builder.setBlock(PreviewSelectors.topCorners(), edgeState);
+				builder.setBlock(PreviewSelectors.topEdges(), sideState);
+			}
+			else
+			{
+				builder.setBlock(PreviewSelectors.topEdges(), edgeState);
+			}
+
+			if (useAdvancedSolarGenerator)
+			{
+				builder.setBlock(PreviewSelectors.topCorners(), GeneratorsBlocks.ADVANCED_SOLAR_GENERATOR.getBlock().defaultBlockState());
+			}
+
+		}
+
+
+        @Override
+        public PreviewLevel createPreview() {
+            if (!isUseLargeType()) return super.createPreview();
+            PreviewBuilder builder = new PreviewBuilder(new Vec3i(9, getDimensionHeight(), 9));
+            fillLargePreview(builder);
+            return new PreviewLevel(builder);
+        }
+
+        private void fillLargePreview(IPreviewBuilder builder) {
+            BlockState casing = MoreThermalEvaporationBlocks.BLOCKS.get(getTier()).getBlock().defaultBlockState();
+            BlockState side = isUseGlass() ? getGlassBlock().defaultBlockState() : casing;
+            BlockState valve = MoreThermalEvaporationBlocks.VALVES.get(getTier()).getBlock().defaultBlockState();
+            int remainingValves = getValveCount();
+            boolean controllerPlaced = false;
+            int top = getDimensionHeight() - 1;
+            for (int y = 0; y <= top; y++) {
+                byte[][] grid = y == 0 ? BOTTOM_ALLOWED_GRID : y == top ? TOP_ALLOWED_GRID
+                        : y == 1 || y == top - 1 ? CENTER_FRAME_ALLOWED_GRID : CENTER_ALLOWED_GRID;
+                for (int z = 0; z < 9; z++) {
+                    for (int x = 0; x < 9; x++) {
+                        int requirement = grid[z][x];
+                        if (requirement != 1 && requirement != 2) continue;
+                        BlockState state = casing;
+                        if (requirement == 2) {
+                            if (!controllerPlaced) {
+                                Direction facing = z == 0 ? Direction.NORTH : z == 8 ? Direction.SOUTH
+                                        : x == 0 ? Direction.WEST : Direction.EAST;
+                                state = Attribute.setFacing(Attribute.setActive(MoreThermalEvaporationBlocks.CONTROLLERS.get(getTier()).getBlock().defaultBlockState(), true), facing);
+                                controllerPlaced = true;
+                            } else if (remainingValves > 0) {
+                                state = valve;
+                                remainingValves--;
+                            } else state = side;
+                        }
+                        builder.setBlock(new BlockPos(x, y, z), state);
+                    }
+                }
+            }
+            if (isUseAdvancedSolarGenerator()) {
+                for (int x : new int[]{1, 7}) for (int z : new int[]{1, 7})
+                    builder.setBlock(new BlockPos(x, top, z), GeneratorsBlocks.ADVANCED_SOLAR_GENERATOR.getBlock().defaultBlockState());
+            }
+        }
+
 
         @Override
         public int getSideBlocks() {
