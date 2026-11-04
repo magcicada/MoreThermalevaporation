@@ -63,7 +63,8 @@ minecraft {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
-
+    mavenLocal()
+    maven { url 'https://maven.blamejared.com/' }
     maven { url 'https://modmaven.dev/' }
     maven { url "https://cursemaven.com" }
     maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }

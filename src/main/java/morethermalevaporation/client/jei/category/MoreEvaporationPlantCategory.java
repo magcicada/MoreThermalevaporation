@@ -194,7 +194,7 @@ public class MoreEvaporationPlantCategory extends MultiblockCategory<MoreEvapora
             super.collectCost(consumer);
             MoreThermalEvaporationTier tier = getTier();
 
-            int corners = this.getCornerBlocks();
+            int corners = this.getEdgeBlocks();
             int sides = this.getSideBlocks();
             int valves = this.getValveCount();
             sides -= valves;
